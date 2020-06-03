@@ -1,12 +1,8 @@
 import {
-  AmbientLight,
+  HemisphereLight,
   DirectionalLight,
-  BoxBufferGeometry,
   Color,
-  DoubleSide,
   Mesh,
-  MeshBasicMaterial,
-  MeshNormalMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
@@ -26,13 +22,14 @@ function init() {
     1,
     1000,
   );
-  camera.position.set(-40, 50, 300);
+  camera.position.set(-200, 100, 200);
 
   const scene = new Scene();
   scene.background = new Color('skyblue');
 
-  const ambient = new AmbientLight(0xffffff, 0.4);
+  const ambient = new HemisphereLight(0xffffff, 0x434343, 0.4);
   const direct = new DirectionalLight(0xffffff, 0.6);
+  direct.position.set(10, 10, 10);
 
   scene.add(ambient, direct);
 

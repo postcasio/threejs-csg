@@ -117,7 +117,7 @@ function createDice() {
   };
 
   const createDimples = (dimplePos) => {
-    if (dimplePos[3]) dimple.rotateX(ninetyDegrees);
+    dimple.rotateZ(ninetyDegrees);
     const currentDimple = dimple.clone();
     currentDimple.position.set(
       dimplePos[0],
@@ -135,7 +135,7 @@ function createDice() {
     // if (i > 11 && i < 33) createDimples(dimpleData[i - 12]);
   }
   dice.union(unionOperands);
-  // dice.subtract(subtractionOperands);
+  dice.subtract(subtractionOperands);
   console.log('subtractionOperands: ', subtractionOperands);
 
   document.querySelector('.time').innerHTML =

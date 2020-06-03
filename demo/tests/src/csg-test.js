@@ -24,23 +24,66 @@ function testCSG(params) {
   const red = new MeshStandardMaterial({ color: 'orangered' });
   const green = new MeshStandardMaterial({ color: 'seagreen' });
   const blue = new MeshStandardMaterial({ color: 'lightblue' });
-  const uvBW = new MeshStandardMaterial({ map: textureBW });
+  const uvBW = new MeshStandardMaterial({
+    map: textureBW,
+    wireframe: true,
+  });
   const uvCol = new MeshStandardMaterial({ map: textureCol });
 
   const box = new Mesh(new BoxBufferGeometry(0.2, 0.2, 1), uvBW);
   // console.log('box: ', new BoxBufferGeometry(0.2, 0.2, 1));
   box.position.set(0.1, 0.1, 0);
 
-  const sphere = new Mesh(new SphereBufferGeometry(0.1), red);
-  sphere.position.set(0, 0, -0.3);
+  const sphere = new Mesh(new SphereBufferGeometry(0.1, 12, 12), red);
+  sphere.position.set(0.6, 0, -0.3);
 
   const sphereB = sphere.clone();
   sphereB.position.set(0, 0, 0.3);
 
+  const sphereC = sphere.clone();
+  sphereC.position.set(0.2, 0, 0.3);
+
+  const sphereD = sphere.clone();
+  sphereD.position.set(0.2, 0, -0.3);
+
+  const sphereE = sphere.clone();
+  sphereE.position.set(0, 0.2, -0.3);
+
+  const sphereF = sphere.clone();
+  sphereF.position.set(0, 0.2, 0.3);
+
+  const sphereG = sphere.clone();
+  sphereG.position.set(0.2, 0.2, 0.3);
+
+  const sphereH = sphere.clone();
+  sphereH.position.set(0.2, 0.2, -0.3);
+
+  console.time('operating: ');
   const csg = new CSG();
-  // csg.union([box, sphere, sphereB]);
-  csg.subtract([box, sphere, sphereB]);
-  // csg.intersect([box, sphere]);
+  // csg.union([
+  //   box,
+  //   sphere,
+  //   sphereB,
+  //   sphereC,
+  //   sphereD,
+  //   sphereE,
+  //   sphereF,
+  //   sphereG,
+  //   sphereH,
+  // ]);
+  // csg.subtract([
+  //   box,
+  //   sphere,
+  //   sphereB,
+  //   sphereC,
+  //   sphereD,
+  //   sphereE,
+  //   sphereF,
+  //   sphereG,
+  //   sphereH,
+  // ]);
+  csg.intersect([box, sphereB]);
+  console.timeEnd('operating: ');
   console.log('csg: ', csg);
 
   return {
