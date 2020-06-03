@@ -75,13 +75,18 @@ class CuttingPlane extends Plane {
     // four classes.
     let polygonType = 0;
     const types = [];
-    for (let i = 0; i < polygon.vertices.length; i++) {
-      const t =
-        this.normal.dot(polygon.vertices[i].pos) - this.constant;
-      const type =
-        t < -EPSILON ? BACK : t > EPSILON ? FRONT : COPLANAR;
-      polygonType |= type;
-      types.push(type);
+
+    if (polygon.plane.equals(this)) {
+      polygonType = 0;
+    } else {
+      for (let i = 0; i < polygon.vertices.length; i++) {
+        const t =
+          this.normal.dot(polygon.vertices[i].pos) - this.constant;
+        const type =
+          t < -EPSILON ? BACK : t > EPSILON ? FRONT : COPLANAR;
+        polygonType |= type;
+        types.push(type);
+      }
     }
 
     // Put the polygon in the correct list, splitting it when necessary.

@@ -2,9 +2,9 @@ import {
   BufferAttribute,
   BufferGeometry,
   Mesh,
-  MeshNormalMaterial,
   Vector2,
   Vector3,
+  Box3,
 } from 'three';
 
 import { BSPNode } from './components/BSPNode.js';
@@ -59,6 +59,7 @@ class CSG {
   constructor() {
     this.polygons = [];
     this.material = [];
+    this.boundingBox = null;
   }
 
   setFromGeometry(geometry) {
@@ -72,6 +73,12 @@ class CSG {
     if (geometry.index !== null) {
       geometry = geometry.toNonIndexed();
     }
+
+    if (!geometry.boundingBox) {
+      geometry.computeBoundingBox();
+    }
+
+    this.boundingBox = geometry.boundingBox;
 
     const positions = geometry.attributes.position;
     const normals = geometry.attributes.normal;
@@ -214,6 +221,41 @@ class CSG {
     return csg;
   }
 
+  merge(operand) {
+    this.polygons = this.polygons.concat(operand.polygons);
+    this.material = this.material.concat(operand.material);
+    this.boundingBox.union(operand.boundingBox);
+    return this;
+  }
+
+  // All CSG operations can be built from a logical or and not operations
+  // left || right
+  logicalOr(operand) {
+    const a = new BSPNode(this.polygons);
+    const b = new BSPNode(operand.polygons);
+    a.clipTo(b);
+    b.clipTo(a);
+    b.invert();
+    b.clipTo(a);
+    b.invert();
+    a.build(b.allPolygons());
+    this.polygons = a.allPolygons();
+    return this;
+  }
+
+  // Switch solid and empty space
+  // !left
+  complement() {
+    for (const polygon of this.polygons) {
+      polygon.negate();
+    }
+    this.boundingBox = new Box3(
+      this.boundingBox.max,
+      this.boundingBox.min,
+    );
+    return this;
+  }
+
   // Return a new CSG solid representing space in either this solid or in the
   // solid `csg`
   //
@@ -228,33 +270,38 @@ class CSG {
   //          |       |            |       |
   //          +-------+            +-------+
   //
-  // A || B
-  union(operands) {
-    for (const operand of operands) {
-      // console.log('operand: ', operand);
-      if (!this.polygons.length) {
-        this.setFromMesh(operand);
-      } else {
-        // todo: support multimaterial
-        this.material.push(operand.material);
-        this.unionOperand(new CSG().setFromMesh(operand));
-      }
+  // Union/addition/merge
+  union(meshes) {
+    let operands = this.prepareOperands(meshes);
+
+    // merge an operands that don't intersect this one
+    // for (const operand of operands) {
+    //   if (!this.boundingBox.intersectsBox(operand.boundingBox)) {
+    //     this.merge(operand);
+    //     operands.splice(operands.indexOf(operand), 1);
+    //   }
+    // }
+
+    // This seems to work even when operands overlap
+    for (let i = 1; i < operands.length; i++) {
+      const operand = operands[i];
+      operands[0].merge(operand);
     }
+
+    this.unionOperand(operands[0]);
+
+    // this.mergeNonIntersectingOperands(operands);
+
+    // for (const operand of operands) {
+    //   this.material.push(operand.material);
+    // }
 
     return this;
   }
 
+  // (Left || Right)
   unionOperand(operand) {
-    const a = new BSPNode(this.polygons);
-    const b = new BSPNode(operand.polygons);
-    a.clipTo(b);
-    b.clipTo(a);
-    b.invert();
-    b.clipTo(a);
-    b.invert();
-    a.build(b.allPolygons());
-    this.polygons = a.allPolygons();
-    return this;
+    return this.logicalOr(operand);
   }
 
   // Return a new CSG solid representing space in this solid but not in the
@@ -271,36 +318,42 @@ class CSG {
   //          |       |
   //          +-------+
   //
-  // A && !B
-  subtract(operands) {
+  // subtraction/difference
+  // Left && !Right =>
+  // !(!Left || Right)
+  subtract(meshes) {
+    let operands = this.prepareOperands(meshes);
+
+    // remove any operands that don't intersect this one
+    // TODO: this is giving false positives
+    // operands = operands.filter((operand) => {
+    //   if (this.boundingBox.intersectsBox(operand.boundingBox)) {
+    //     return operand;
+    //   }
+    // });
+
+    // This doesn't work when operands overlap
+    // for (let i = 1; i < operands.length; i++) {
+    //   const operand = operands[i];
+    //   operands[0].merge(operand);
+    // }
+
+    // this.subtractOperand(operands[0]);
+
+    // This works
+    this.mergeNonIntersectingOperands(operands);
+
     for (const operand of operands) {
-      if (!this.polygons.length) {
-        this.setFromMesh(operand);
-      } else {
-        this.material.push(operand.material);
-        this.subtractOperand(new CSG().setFromMesh(operand));
-      }
+      this.subtractOperand(operand);
     }
 
     return this;
   }
 
+  // !(!Left || Right)
   subtractOperand(operand) {
-    this.complement().unionOperand(operand).complement();
+    this.complement().logicalOr(operand).complement();
   }
-  // subtractOperand(operand) {
-  //   const a = new BSPNode(this.polygons);
-  //   const b = new BSPNode(operand.polygons);
-  //   a.invert();
-  //   a.clipTo(b);
-  //   b.clipTo(a);
-  //   b.invert();
-  //   b.clipTo(a);
-  //   b.invert();
-  //   a.build(b.allPolygons());
-  //   a.invert();
-  //   this.polygons = a.allPolygons();
-  // }
 
   // Return a new CSG solid representing space both this solid and in the
   // solid `csg`
@@ -316,42 +369,72 @@ class CSG {
   //          |       |
   //          +-------+
   //
-  // A && B
-  intersect(operands) {
-    for (const operand of operands) {
-      if (!this.polygons.length) {
-        this.setFromMesh(operand);
-      } else {
-        this.material.push(operand.material);
-        this.intersectOperand(new CSG().setFromMesh(operand));
+  // intersections/common
+  // Left && Right =>
+  // !(!Left || !Right)
+  intersect(meshes) {
+    let operands = this.prepareOperands(meshes);
+
+    // if any of the operands don't intersect with this one, or with each other,
+    // there will be no polygons left
+    // TODO: bbox checks are giving false results
+    const nonIntersectingOperands = operands.filter((operand) => {
+      if (!this.boundingBox.intersectsBox(operand.boundingBox)) {
+        return operand;
       }
+    });
+
+    // TODO: check operands for interection with each other and bail early if possible
+
+    // if (!nonIntersectingOperands.length) {
+    //   this.polygons = [];
+    //   return this;
+    // }
+
+    for (const operand of operands) {
+      this.material.push(operand.material);
+      this.intersectOperand(operand);
     }
 
     return this;
   }
 
+  // !(!Left || !Right)
   intersectOperand(operand) {
-    const a = new BSPNode(this.polygons);
-    const b = new BSPNode(operand.polygons);
-
-    a.invert();
-    b.clipTo(a);
-    b.invert();
-    a.clipTo(b);
-    b.clipTo(a);
-    a.build(b.allPolygons());
-    a.invert();
-    this.polygons = a.allPolygons();
+    this.complement().logicalOr(operand.complement()).complement();
   }
 
-  // Switch solid and empty space
-  // !A
-  complement() {
-    this.polygons.map((p) => {
-      p.negate();
+  prepareOperands(operands) {
+    if (!this.polygons.length) {
+      this.setFromMesh(operands[0]);
+      operands.shift();
+    }
+
+    // convert operands to csg
+    return operands.map((operand) => {
+      this.material.push(operand.material);
+      return new CSG().setFromMesh(operand);
     });
-    return this;
   }
+
+  mergeNonIntersectingOperands(operands) {
+    // merge any operands that don't intersect
+    let allOverlap = false;
+    while (!allOverlap) {
+      allOverlap = true;
+      for (let i = 0; i < operands.length - 1; i++) {
+        const a = operands[i];
+        const b = operands[i + 1];
+        if (!a.boundingBox.intersectsBox(b.boundingBox)) {
+          allOverlap = false;
+          a.merge(b);
+          operands.splice(operands.indexOf(b), 1);
+        }
+      }
+    }
+  }
+
+  allOperandsIntersect(operands) {}
 }
 
 export { CSG };
