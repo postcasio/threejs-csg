@@ -26,7 +26,7 @@ function testCSG(params) {
   const blue = new MeshStandardMaterial({ color: 'lightblue' });
   const uvBW = new MeshStandardMaterial({
     map: textureBW,
-    wireframe: true,
+    // wireframe: true,
   });
   const uvCol = new MeshStandardMaterial({ map: textureCol });
 
@@ -71,18 +71,18 @@ function testCSG(params) {
   //   sphereG,
   //   sphereH,
   // ]);
-  // csg.subtract([
-  //   box,
-  //   sphere,
-  //   sphereB,
-  //   sphereC,
-  //   sphereD,
-  //   sphereE,
-  //   sphereF,
-  //   sphereG,
-  //   sphereH,
-  // ]);
-  csg.intersect([box, sphereB]);
+  csg.subtract([
+    box,
+    sphere,
+    sphereB,
+    sphereC,
+    sphereD,
+    sphereE,
+    sphereF,
+    sphereG,
+    sphereH,
+  ]);
+  // csg.intersect([box, sphereB]);
   console.timeEnd('operating: ');
   console.log('csg: ', csg);
 

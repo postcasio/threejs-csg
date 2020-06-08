@@ -1,4 +1,4 @@
-# threejs-csg
+# threejs-csg (work in progress)
 
 Constructive Solid Geometry for three.js, ES6 + BufferGeometry
 

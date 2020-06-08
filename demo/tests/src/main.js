@@ -43,34 +43,8 @@ function init() {
 
   const results = testCSG();
 
-  // const material = new MeshNormalMaterial();
-  // const material = new MeshNormalMaterial({ side: DoubleSide });
-
-  // const plane = new Mesh(results.plane, material);
-  // plane.position.set(1, 1, 0);
-
-  // const box = new Mesh(results.box, material);
-  // box.position.set(-1, 0, 0);
-
-  // const boxB = new Mesh(results.boxB, material);
-  // boxB.position.set(-0.5, 0, 0);
-
-  // const cylinder = new Mesh(results.cylinder, material);
-  // cylinder.position.set(1, -1, 0);
-
-  // const sphere = new Mesh(results.sphere, material);
-  // sphere.position.set(-1, -1, 0);
-
-  // const test = new Mesh(results.test, material);
-  // test.position.set(1, 0, 0);
 
   scene.add(
-    // plane,
-    // box,
-    // boxB,
-    // cylinder,
-    // sphere,
-    // test,
     results.testMesh,
   );
   console.log('results.testMesh: ', results.testMesh);
