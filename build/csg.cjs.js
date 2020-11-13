@@ -1,3 +1,7 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
 // Polyfills
 
 if ( Number.EPSILON === undefined ) {
@@ -50290,4 +50294,4 @@ class CSG {
   }
 }
 
-export { CSG };
+exports.CSG = CSG;

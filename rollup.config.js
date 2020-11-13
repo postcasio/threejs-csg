@@ -27,6 +27,11 @@ export default [
         file: 'build/csg.module.js',
         indent: '\t',
       },
+      {
+        format: 'cjs',
+        file: 'build/csg.cjs.js',
+        indent: '\t',
+      },
     ],
   },
   // {
